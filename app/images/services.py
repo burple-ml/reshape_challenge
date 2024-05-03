@@ -151,7 +151,7 @@ def compute_avg_cosine_similarity(image1: ImageHandler, image2: ImageHandler):
                              cosine_similarity_green + \
                              cosine_similarity_blue) / 3
 
-    return cosine_similarity_red
+    return avg_cosine_similarity
 
 def cosine_similarity(array1, array2):
     # Convert arrays to numpy arrays

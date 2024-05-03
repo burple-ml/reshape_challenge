@@ -9,7 +9,9 @@ New reshape backend server coding challenge
 
 - You can provide an image here and get a **cropped version of it**.
 - Compute the **cosine similarity** between provided images.
-- Compute a hash of the base64 binary provided image
+- Compute a hash of the provided image. 
+
+all images must be provided as form data in binary format. remember that when you are building the frontend for this application.
 """
 
 app = FastAPI(

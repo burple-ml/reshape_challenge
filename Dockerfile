@@ -5,14 +5,16 @@ FROM python:3.10
 COPY requirements.txt .
 COPY app/ app/
 
+# Install necessary system packages
+RUN apt-get update && apt-get install -y \
+    libgl1-mesa-glx \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install dependencies and remove requirements.txt, to avoid unnecessary files
 RUN pip install --no-cache-dir -r requirements.txt && rm -rf requirements.txt
 
-# Set the working directory inside the container
-WORKDIR /app
-
-# Expose port 5000
-EXPOSE 5000
+# Make port 80 available to the world outside this container
+EXPOSE 80
 
 # Run command
-CMD ["uvicorn", "app:app", "--port", "5000"]
+CMD ["uvicorn", "app.app:app", "--host", "0.0.0.0", "--port", "80"]
