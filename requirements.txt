@@ -1,2 +1,7 @@
 fastapi==0.68.1
 uvicorn==0.15.0
+requests==2.31.0
+python-multipart==0.0.9
+opencv-python==4.9.0.80
+numpy==1.26.4
+scipy==1.13.0

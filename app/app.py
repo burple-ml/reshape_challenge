@@ -1,13 +1,15 @@
+''' main app code '''
 from fastapi import FastAPI
+from .images.routes import router
 
 description = """
 New reshape backend server coding challenge
 
 ## Items
 
-- You can **zoom image**.
-- Compute **cosine similarity between images**
-- 
+- You can provide an image here and get a **cropped version of it**.
+- Compute the **cosine similarity** between provided images.
+- Compute a hash of the base64 binary provided image
 """
 
 app = FastAPI(
@@ -28,8 +30,12 @@ app = FastAPI(
 )
 
 
-# Add some middlewares here if you want....
+# Add some middlewares here as per need..... 
 
-@app.get("/health")
+# Include routes from user router
+app.include_router(router, prefix="/image", tags=["imageOps"])
+
+# health check for health monitoring
+@app.get("/health", include_in_schema=False)
 async def health_check():
-    return {"status": "200 Ok"}
+    return {"status": "200 OK"}
