@@ -1,7 +1,6 @@
 from fastapi import UploadFile, \
-             File, HTTPException, Depends
+             File, HTTPException
 import requests
-from .models import MultiFormData
 import cv2
 import numpy as np
 import base64
@@ -106,6 +105,30 @@ class ImageHandler():
         # Split image into color channels
         b, g, r = cv2.split(image)
         return r.flatten(), g.flatten(), b.flatten()
+    
+    def compute_average_hash(self, hash_size=8):
+        # Convert bytes to numpy array
+        nparr = np.frombuffer(self.image_data, np.uint8)
+        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+        resized = cv2.resize(image, (hash_size, hash_size))
+        
+        # using an average hash implmentation
+        gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
+        
+        average_pixel = gray.mean()
+        # Generate binary hash
+        hash_value = ""
+        for i in range(hash_size):
+            for j in range(hash_size):
+                if gray[i, j] >= average_pixel:
+                    hash_value += "1"
+                else:
+                    hash_value += "0"
+
+        # Convert to hex string
+        hex_value = hex(int(hash_value, 2))[2:]
+        return hex_value
 
 
 def compute_avg_cosine_similarity(image1: ImageHandler, image2: ImageHandler):
@@ -118,22 +141,21 @@ def compute_avg_cosine_similarity(image1: ImageHandler, image2: ImageHandler):
     r_array2, g_array2, b_array2 = image2.bytes_to_channels()
     
     # Compute cosine similarity for each channel on a very small sample
-    cosine_similarity_red = cosine_similarity(r_array1[:IMAGE_SAMPLE_SIZE], r_array2[:IMAGE_SAMPLE_SIZE])
-    cosine_similarity_green = cosine_similarity(g_array1[:IMAGE_SAMPLE_SIZE], g_array2[:IMAGE_SAMPLE_SIZE])
-    cosine_similarity_blue = cosine_similarity(b_array1[:IMAGE_SAMPLE_SIZE], b_array2[:IMAGE_SAMPLE_SIZE])
+    cosine_similarity_red = cosine_similarity(r_array1[:10], r_array2[:10])
+    cosine_similarity_green = cosine_similarity(g_array1[:10], g_array2[:10])
+    cosine_similarity_blue = cosine_similarity(b_array1[:10], b_array2[:10])
+
 
     # Get the average cosine similarity across all channels
     avg_cosine_similarity = (cosine_similarity_red + \
                              cosine_similarity_green + \
                              cosine_similarity_blue) / 3
 
-    return avg_cosine_similarity
+    return cosine_similarity_red
 
 def cosine_similarity(array1, array2):
     # Convert arrays to numpy arrays
-    #array1 = np.array(array1)
-    #array2 = np.array(array2)
-   
+    
     # Pad or truncate arrays to equal length
     '''max_len = max(len(array1), len(array2))
     pad_length_1 = max(0, max_len - len(array1))
@@ -143,7 +165,8 @@ def cosine_similarity(array1, array2):
     '''
 
     # Compute dot product
-    dot_product = np.dot(array1, array2)
+    
+    dot_product = array1@array2
     
     # Compute magnitudes
     magnitude1 = np.linalg.norm(array1)
@@ -153,3 +176,4 @@ def cosine_similarity(array1, array2):
     similarity = dot_product / (magnitude1 * magnitude2)
     
     return similarity
+
