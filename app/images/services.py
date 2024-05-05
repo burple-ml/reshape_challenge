@@ -4,24 +4,41 @@ import requests
 import cv2
 import numpy as np
 import base64
+import imghdr
 
 MAX_SIZE = 5000000  # 5 MB ish(for pepe's sake), should ideally be fettched from some config service, or maintained using database CRUD operations or s3, or a simple yaml file.
-IMAGE_SAMPLE_SIZE = 10
+IMAGE_SAMPLE_SIZE = 100
 
-async def validate_image(file: UploadFile = File(...)): 
+
+# alternate functions to the deprecated imghdr library.
+def is_jpeg(data):
+    return data.startswith(b'\xFF\xD8\xFF')
+
+
+def is_png(data):
+    return data.startswith(b'\x89PNG\r\n\x1a\n')
+
+
+async def validate_image(file: UploadFile = File(...)):
+    """ performs validation of both form data headers, and the binary data, as well as limits content length to less than 5 MB """ 
     if file is None:
         raise HTTPException(status_code=400, detail="Either file or URL must be provided.")
     
     if file.content_type not in ["image/jpeg", "image/png"]:
-        raise HTTPException(status_code=400, detail="Only JPEG and PNG files allowed. Try another file.")  # https://www.youtube.com/watch?v=h06ZkqM_7qM
+        raise HTTPException(status_code=400, detail="Content-type error. Only JPEG and PNG files allowed.")  # https://www.youtube.com/watch?v=h06ZkqM_7qM
     
     content = await file.read()
     
+    # Find Mime type from bytes, to reject all other MIME types, or bad JPEG and PNG encodings
+    image_type = imghdr.what(None, h=content)
+    if image_type not in ['jpeg', 'png']:
+        return HTTPException(status_code=400, detail="Content is either not a JPEG or PNG image or is encoded wrong.")
+
     file_size = len(content)
     if file_size > MAX_SIZE:
         raise HTTPException(status_code=400, detail=f"Image size exceeds the maximum allowed size of {MAX_SIZE} bytes.")
     
-    content_type = file.content_type.split('/')[1]  # needs to be made into a method
+    content_type = image_type  # needs to be made into a method
     return {"image_data": content, "content_type": content_type}
 
     """ #optional logic for URLs
@@ -44,7 +61,9 @@ async def validate_image(file: UploadFile = File(...)):
         return {"image": response.content, "content_type": content_type}
     """
 
+
 async def validate_multiform_data(file1: UploadFile = File(...), file2: UploadFile = File(...)):
+    """ Handles multiple files. """
     return [await validate_image(file=file1), await validate_image(file=file2)]
 
 
@@ -56,15 +75,15 @@ class ImageHandler():
         self.height = height
         self.image_type = content_type
 
-    def crop_center(self):
-        """
-        Cropped image's byte object
-        """
-        # Convert file object to numpy array
+    def _convert_to_array(self):
+        # Convert bytes to 3d numpy array representing pixel intensities.
         file_bytes = np.asarray(bytearray(self.image_data), dtype=np.uint8)
-        # Read the image using OpenCV
-        image = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+        return cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+        
+    def crop_center(self):
+        # Convert file object to numpy array
 
+        image = self._convert_to_array()
         img_height, img_width = image.shape[:2]
         
         crop_width = self.width
@@ -87,36 +106,30 @@ class ImageHandler():
         cropped_img = padded_img[start_y:end_y, start_x:end_x]
         
         # Convert cropped image to base64 encoded data
-        success, encoded_image = cv2.imencode('.'+self.image_type, cropped_img)  # Change '.jpg' to '.png' if needed
+        success, encoded_image = cv2.imencode('.'+self.image_type, cropped_img)
         if success:
             base64_encoded_image = base64.b64encode(encoded_image)
             return base64_encoded_image
         else: 
-            HTTPException(status_code=500, detail="Internal Server Error")
+            HTTPException(status_code=422, detail="The server is unable to process this content for now.")
     
     def bytes_to_channels(self):
-        
         # Convert byte data to numpy array
-        image_array = np.frombuffer(self.image_data, dtype=np.uint8)
-        
-        # Decode image using OpenCV
-        image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
-        
+        image = self._convert_to_array()
+
         # Split image into color channels
         b, g, r = cv2.split(image)
         return r.flatten(), g.flatten(), b.flatten()
     
     def compute_average_hash(self, hash_size=8):
         # Convert bytes to numpy array
-        nparr = np.frombuffer(self.image_data, np.uint8)
-        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        image = self._convert_to_array()
 
+        # using an aHash (average hash) algorithm.
         resized = cv2.resize(image, (hash_size, hash_size))
-        
-        # using an average hash implmentation
         gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
-        
         average_pixel = gray.mean()
+
         # Generate binary hash
         hash_value = ""
         for i in range(hash_size):
@@ -133,47 +146,46 @@ class ImageHandler():
 
 def compute_avg_cosine_similarity(image1: ImageHandler, image2: ImageHandler):
     """ 
-        this function takes 2 images and extracts the 3 channels as a numpy array, 
-        computes cosine similarity between each corresponding channel, and then averages over them.
+        computes the cosine similarity of each channel and then averages it.
+        This needs to optimized for GRAYSCALE images.
     """
 
     r_array1, g_array1, b_array1 = image1.bytes_to_channels()
     r_array2, g_array2, b_array2 = image2.bytes_to_channels()
     
     # Compute cosine similarity for each channel on a very small sample
-    cosine_similarity_red = cosine_similarity(r_array1[:10], r_array2[:10])
-    cosine_similarity_green = cosine_similarity(g_array1[:10], g_array2[:10])
-    cosine_similarity_blue = cosine_similarity(b_array1[:10], b_array2[:10])
-
+    cosine_similarity_red = cosine_similarity(r_array1[:IMAGE_SAMPLE_SIZE], r_array2[:IMAGE_SAMPLE_SIZE])
+    cosine_similarity_green = cosine_similarity(g_array1[:IMAGE_SAMPLE_SIZE], g_array2[:IMAGE_SAMPLE_SIZE])
+    cosine_similarity_blue = cosine_similarity(b_array1[:IMAGE_SAMPLE_SIZE], b_array2[:IMAGE_SAMPLE_SIZE])
 
     # Get the average cosine similarity across all channels
     avg_cosine_similarity = (cosine_similarity_red + \
                              cosine_similarity_green + \
                              cosine_similarity_blue) / 3
-
     return avg_cosine_similarity
 
+
 def cosine_similarity(array1, array2):
-    # Convert arrays to numpy arrays
+    # compute the cosine of the angle between the images in a n-dimensional space. This function needs to be more dynamic to accomodate for different sized arrays. 
+    array1 = np.asarray(array1, dtype='uint32')
+    array2 = np.asarray(array2, dtype='uint32')
     
-    # Pad or truncate arrays to equal length
-    '''max_len = max(len(array1), len(array2))
-    pad_length_1 = max(0, max_len - len(array1))
-    pad_length_2 = max(0, max_len - len(array2))
-    array1 = np.pad(array1, (0, pad_length_1), mode='constant')
-    array2 = np.pad(array2, (0, pad_length_2), mode='constant')
+    '''
+    # Pad the smaller array to plot the image in the higher dimensional space. 
+    pad_len_array1 = max(0, array2.shape[0] - array1.shape[0])
+    pad_len_array2 = max(0, array1.shape[0] - array2.shape[0])
+    padded_array1 = np.pad(array1, (0, pad_len_array1), mode='constant', constant_values=(0,0))
+    padded_array2 = np.pad(array2, (0, pad_len_array2), mode='constant', constant_values=(0,0))
+
+    dot_product = np.dot(padded_array1, padded_array2)
     '''
 
-    # Compute dot product
-    
-    dot_product = array1@array2
-    
-    # Compute magnitudes
+    dot_product = np.dot(array1, array2)
+
+    # Compute frobenius norms
     magnitude1 = np.linalg.norm(array1)
     magnitude2 = np.linalg.norm(array2)
     
     # Compute cosine similarity
     similarity = dot_product / (magnitude1 * magnitude2)
-    
     return similarity
-
