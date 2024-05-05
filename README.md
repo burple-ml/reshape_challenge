@@ -33,9 +33,10 @@ PS:
   It gives a neat number between 0 and 1, where 0 being lesser degree of similarity between the images, and 1 signifying that the images are similiar or a scalar multiple of the other.
   This is very cool because in the case of 1 we can even capture cases where images have been subjected to some linear transformation and we can catch that, simply by using this metric. 
 
-  To compute the cosine similarity, I have converted the image to a 3d-numpy array of size \( m \times n \times c \). This numpy array, represents the pixel grid on the first 2 dimensions, where each element tells us the pixel intensity at 
-  that location in the grid, and the third dimension is for each of the R,G,B channels. Each channel is treated as a vector in the \( m \times n \)-dimensional space, and then the cosine similarity is computed as 
-  \[\text{Cosine Similarity}(A, B) = \frac{{A \cdot B}}{{|A| \cdot |B|}}\]
+  To compute the cosine similarity, I have converted the image to a 3d-numpy array of size m &times; n &times; c. This numpy array, represents the pixel grid on the first 2 dimensions, where each element tells us the pixel intensity at 
+  that location in the grid, and the third dimension is for each of the R,G,B channels. Each channel is treated as a vector in the m &times; n-dimensional space, and then the cosine similarity is computed as 
+  $$\text{Cosine Similarity}(A, B) = \frac{{A \cdot B}}{{|A| \cdot |B|}}$$
+
 
   The above is computed on a small sample of the images, and for each channel and then averaged to give the final score.
 - aHash (average Hash algorithm) is used to compute a hash that can uniquely identify the image. In the algorithm, the images are resized to a size 8x8 and a few more transformartions are applied to it, including grayscaling of the image, to produce 
