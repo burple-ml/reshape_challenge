@@ -2,8 +2,15 @@
 reshape interview challenge
 
 ## Introduction
-This is a fastapi application that does some neat image processing and computes some image metrics for images
-As of now 
+This is a fastapi application that does some neat image processing and computes some image metrics.
+As of now there are 3 functionalities:-
+- `/crop` - upload your PNG or JPEG image, and provide the breadth and height for your crop operation. The server will provide you the response in text/html type. 
+  Please download this response as a .html file, and open that file in your browser, to see the cropped image. This route will return a 400 response if the image is not JPEG or PNG, or is more than 5 MB, or,
+  if the MIME type is not specified in the form data.  
+  To test the image crop, upload the image as guided by the swagger docs page. In the response body you will receive some html code. Please download that code to a .html file and open it in your browser. 
+  You will be able to see the cropped image directly in your browser. 
+- `/difference` - takes 2 images, and computes the cosine similarity for the images. Details in the answers section.
+- `/hash` - computes the aHash or the average hash for the image. [Click here for more information](https://content-blockchain.org/research/testing-different-image-hash-functions/)
 
 ## Releases 
 -v1
@@ -18,8 +25,7 @@ to run this server on your local machine and to test it in 4 simple steps:-
 - go to your browser and go to the url - `http://localhost:80/docs`. here you will be able to see the swagger documentation in the openapi specification
   for the api endpoints that server exposes. 
 
-PS: to test the image crop, upload the image as guided by the swagger docs page. In the response body you will receive some html code. Please download that code to a .html file and open it in your browser. 
-You will be able to see the cropped image directly in your browser. 
+PS: 
 
 ## Answers and assumptions
 #### Answers
@@ -29,9 +35,8 @@ You will be able to see the cropped image directly in your browser.
 
   To compute the cosine similarity, I have converted the image to a 3d-numpy array of size \( m \times n \times c \). This numpy array, represents the pixel grid on the first 2 dimensions, where each element tells us the pixel intensity at 
   that location in the grid, and the third dimension is for each of the R,G,B channels. Each channel is treated as a vector in the \( m \times n \)-dimensional space, and then the cosine similarity is computed as 
-  \[
-  \text{Cosine Similarity}(A, B) = \frac{{A \cdot B}}{{\|A\| \cdot \|B\|}}
- \]  
+  \[\text{Cosine Similarity}(A, B) = \frac{{A \cdot B}}{{|A| \cdot |B|}}\]
+
   The above is computed on a small sample of the images, and for each channel and then averaged to give the final score.
 - aHash (average Hash algorithm) is used to compute a hash that can uniquely identify the image. In the algorithm, the images are resized to a size 8x8 and a few more transformartions are applied to it, including grayscaling of the image, to produce 
   the hash. 
