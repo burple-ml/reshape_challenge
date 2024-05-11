@@ -1,6 +1,11 @@
 ''' main app code '''
 from fastapi import FastAPI
+from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from .images.routes import router
+import os
+
+base_path = "./app"
 
 description = """
 New reshape backend server coding challenge
@@ -36,6 +41,14 @@ app = FastAPI(
 
 # Include routes from user router
 app.include_router(router, prefix="/image", tags=["imageOps"])
+
+# Mount the "static" directory to the "/static" route
+app.mount("/static", StaticFiles(directory=os.path.join(base_path, "static")), name="static")
+
+# Serve index.html explicitly from the root route ("/")
+@app.get("/")
+async def read_index():
+    return FileResponse(os.path.join(base_path, "static", "views", "index.html"))
 
 # health check for health monitoring
 @app.get("/health", include_in_schema=False)
