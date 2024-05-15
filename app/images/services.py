@@ -18,6 +18,13 @@ def is_jpeg(data):
 def is_png(data):
     return data.startswith(b'\x89PNG\r\n\x1a\n')
 
+def guess_content_type(data):
+    if is_jpeg(data):
+        return 'jpeg'
+    elif is_png(data):
+        return 'png'
+    else:
+        return 'invalid'
 
 async def validate_image(file: UploadFile = File(...)):
     """ performs validation of both form data headers, and the binary data, as well as limits content length to less than 5 MB """ 
@@ -30,16 +37,19 @@ async def validate_image(file: UploadFile = File(...)):
     content = await file.read()
     
     # Find Mime type from bytes, to reject all other MIME types, or bad JPEG and PNG encodings
-    image_type = imghdr.what(None, h=content)
+    #image_type = imghdr.what(None, h=content)
+    
+    # use primitive method of guessing content type
+    image_type = guess_content_type(content)
+
     if image_type not in ['jpeg', 'png']:
-        return HTTPException(status_code=400, detail="Content is either not a JPEG or PNG image or is encoded wrong.")
+        raise HTTPException(status_code=400, detail="Content is either not a JPEG or PNG image or is encoded wrong.")
 
     file_size = len(content)
     if file_size > MAX_SIZE:
         raise HTTPException(status_code=400, detail=f"Image size exceeds the maximum allowed size of {MAX_SIZE} bytes.")
     
-    content_type = image_type  # needs to be made into a method
-    return {"image_data": content, "content_type": content_type}
+    return {"image_data": content, "content_type": image_type}
 
     """ #optional logic for URLs
     elif url:

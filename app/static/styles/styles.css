@@ -1,0 +1,48 @@
+.background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-repeat: no-repeat;
+    background-size: 100% 100%; 
+    z-index: -1;
+    opacity: 0.8;
+}
+
+.content {
+    color: black;
+}
+
+.horizontal-section {
+    background-color: #061541; 
+    color: #e9e50ae1; 
+    padding: 20px;
+    text-align: center;
+}
+
+.vertical-grid{
+    display: flex;
+    justify-content: space-between;  
+}
+
+.vertical-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #f0f09ae1;
+    text-align: center;
+    min-height: 4rem;
+    min-width: 33%;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
+.vertical-section form {
+    margin-bottom: 20px; 
+}
+
+.error-message {
+    color: red;
+    display: none;
+}
