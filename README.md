@@ -1,8 +1,8 @@
-# reshape_challenge
-reshape interview challenge
 
 ## Introduction
 This is a fastapi application that does some neat image processing and computes some image metrics.
+To take a demo go to `localhost:80/` or `localhost:80/index.html`.
+
 As of now there are 3 functionalities:-
 - `/crop` - upload your PNG or JPEG image, and provide the breadth and height for your crop operation. The server will provide you the response in text/html type. 
   Please download this response as a .html file, and open that file in your browser, to see the cropped image. This route will return a 400 response if the encoded data is not JPEG or PNG, or is more than 5 MB, or,
@@ -22,11 +22,8 @@ to run this server on your local machine and to test it in 4 simple steps:-
 - cd to the repo directory, and run the docker command to build the image - `docker build -t <repo:tag_name> .` and cross fingers
 - once the build is complete, run - `docker run -d -p 80:80 <repo:tag_name>`. 
   you can skip the -d to avoid the detached mode of running the container, that way you can see the stdout
-- go to your browser and go to the url - `http://localhost:80/docs`. here you will be able to see the swagger documentation in the openapi specification
+- go to your browser and go to the url - `http://localhost:80/` or go to `http://localhost:80/docs` . The latter being a swagger documentation in the openapi specification
   for the api endpoints that server exposes.
-
-PS: To test the image crop, upload the image as guided by the swagger docs page. In the response body you will receive some html code. Please download that code to a .html file and open it in your browser. 
-You will be able to see the cropped image directly in your browser.
 
 ## Answers and assumptions
 #### Answers
