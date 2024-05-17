@@ -46,3 +46,11 @@
     color: red;
     display: none;
 }
+
+
+.vertical-section form label,
+.vertical-section form input {
+    display: block;
+    width: 100%;
+    margin-bottom: 10px;
+}

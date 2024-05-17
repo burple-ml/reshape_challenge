@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Form
 from .services import validate_image, MAX_SIZE, ImageHandler, \
             compute_avg_cosine_similarity, validate_multiform_data
 from fastapi.responses import HTMLResponse
@@ -9,9 +9,9 @@ router = APIRouter(prefix='/v1')
 
 @router.post("/crop")
 async def image_crop(image_data: dict = Depends(validate_image),
-                     width: int = Query(default=100, description="Width of the image, has to be greater than 0 and less than 1000. \
+                     width: int = Form(default=100, description="Width of the image, has to be greater than 0 and less than 1000. \
                             Padding will be added in this dimension if your image is smaller. Defaults to 100", gt=0, le=1000), 
-                     height: int = Query(default=100, description="Height of the image, has to be greater than 0 and less than 1000. \
+                     height: int = Form(default=100, description="Height of the image, has to be greater than 0 and less than 1000. \
                             Padding will be added in this dimension if your image is smaller. Defaults to 100", gt=0, le=1000)):
     """ This route accepts a multipart/form-data body, and 2 query parameters width and height in pixels which should be int, which default to a value of 100.
         Metadata in each form field is expected. so please do specify type in form data.  Moreoever, the encoded content is also validated, 
