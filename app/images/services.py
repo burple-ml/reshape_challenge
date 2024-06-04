@@ -1,12 +1,14 @@
 from fastapi import UploadFile, \
              File, HTTPException
-import requests
 import cv2
 import numpy as np
 import base64
-import imghdr
+from sqlalchemy.orm import Session
+from .models import ImageCrop
+from ..config import SessionLocal
 
-MAX_SIZE = 5000000  # 5 MB ish(for pepe's sake), should ideally be fettched from some config service, or maintained using database CRUD operations or s3, or a simple yaml file.
+
+MAX_SIZE = 5000000  # 5 MB ish, should ideally be fettched from some config service, or maintained using database CRUD operations or s3, or a simple yaml file.
 IMAGE_SAMPLE_SIZE = 100
 
 
@@ -199,3 +201,16 @@ def cosine_similarity(array1, array2):
     # Compute cosine similarity
     similarity = dot_product / (magnitude1 * magnitude2)
     return similarity
+
+# service function to get image
+def get_image(db: Session, image_id: int):
+    return db.query(ImageCrop).filter(ImageCrop.id == image_id).first()
+
+
+# Dependency to get DB session
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

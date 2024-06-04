@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, Query, Form
+from fastapi import APIRouter, Depends, Query, Form, HTTPException
 from .services import validate_image, MAX_SIZE, ImageHandler, \
-            compute_avg_cosine_similarity, validate_multiform_data
+            compute_avg_cosine_similarity, validate_multiform_data, get_db, \
+            Session, get_image
 from fastapi.responses import HTMLResponse
-
+from .models import ImageCrop
 
 router = APIRouter(prefix='/v1')
 
@@ -25,6 +26,8 @@ async def image_crop(image_data: dict = Depends(validate_image),
                                  height=height,
                                  content_type=image_data['content_type']).crop_center()
     
+    
+
     # Generate HTML content, should ideally be generated from templates in a views folder.
     html_content = f'<img src="data:image/{image_data["content_type"]};base64,{cropped_image_data.decode()}"/>'
 
@@ -64,3 +67,11 @@ async def image_hash(image_data: dict = Depends(validate_image)):
                           width=0, height=0,
                           content_type=image_data['content_type']).compute_average_hash()
     return {'hash': hash_value}
+
+
+@router.get("/images/{image_id}")
+def read_image(image_id: int, db_session: Session = Depends(get_db)):
+    db_image = get_image(db_session, image_id)
+    if db_image is None:
+        raise HTTPException(status_code=404, detail="Image not found")
+    return db_image

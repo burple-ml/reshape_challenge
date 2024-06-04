@@ -1,12 +1,10 @@
 ''' main app code '''
 from fastapi import FastAPI
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-import sqlalchemy.connectors
 from .images.routes import router
 import os
-import sqlalchemy
-from .config import DatabaseConnector, base_path
+from .config import setup_database, base_path
 
 
 description = """
@@ -21,11 +19,8 @@ New reshape backend server coding challenge
 all images must be provided as form data in binary format. remember that when you are building the frontend for this application.
 """
 
-try:
-    db_conn = DatabaseConnector() 
+setup_database()
 
-except Exception as e:
-    print("Initialisation was not successfully, check call stack below")
 
 
 app = FastAPI(
