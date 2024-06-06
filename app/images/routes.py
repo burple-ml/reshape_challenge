@@ -13,7 +13,8 @@ async def image_crop(image_data: dict = Depends(validate_image),
                      width: int = Form(default=100, description="Width of the image, has to be greater than 0 and less than 1000. \
                             Padding will be added in this dimension if your image is smaller. Defaults to 100", gt=0, le=1000), 
                      height: int = Form(default=100, description="Height of the image, has to be greater than 0 and less than 1000. \
-                            Padding will be added in this dimension if your image is smaller. Defaults to 100", gt=0, le=1000)):
+                            Padding will be added in this dimension if your image is smaller. Defaults to 100", gt=0, le=1000), 
+                     db: Session = Depends(get_db)):
     """ This route accepts a multipart/form-data body, and 2 query parameters width and height in pixels which should be int, which default to a value of 100.
         Metadata in each form field is expected. so please do specify type in form data.  Moreoever, the encoded content is also validated, 
         so it should be valid png or jpeg. no funny stuff. 
@@ -26,8 +27,16 @@ async def image_crop(image_data: dict = Depends(validate_image),
                                  height=height,
                                  content_type=image_data['content_type']).crop_center()
     
-    
-
+    # log to db
+    db_image_crop = ImageCrop(
+        width=width,
+        height=height,
+        data=cropped_image_data.decode())
+    db.add(db_image_crop)
+    db.commit()
+    #db.refresh(db_image_crop)
+        
+    print(cropped_image_data.decode())
     # Generate HTML content, should ideally be generated from templates in a views folder.
     html_content = f'<img src="data:image/{image_data["content_type"]};base64,{cropped_image_data.decode()}"/>'
 

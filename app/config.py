@@ -36,6 +36,7 @@ Base = declarative_base()
 def setup_database():
     with engine.connect() as conn:
         conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {IMAGE_OPS_SCHEMA};"))
+        conn.execute(text(f'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'))
         conn.commit()
 
     # Create tables if not exists
