@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, Form, HTTPException
+from fastapi import APIRouter, Depends, Form, HTTPException, Path
 from .services import validate_image, MAX_SIZE, ImageHandler, \
             compute_avg_cosine_similarity, validate_multiform_data, get_db, \
             Session, get_image
@@ -34,9 +34,9 @@ async def image_crop(image_data: dict = Depends(validate_image),
         data=cropped_image_data.decode())
     db.add(db_image_crop)
     db.commit()
-    #db.refresh(db_image_crop)
-        
-    print(cropped_image_data.decode())
+    print("Newly created ID:", db_image_crop.id)
+    db.close()
+
     # Generate HTML content, should ideally be generated from templates in a views folder.
     html_content = f'<img src="data:image/{image_data["content_type"]};base64,{cropped_image_data.decode()}"/>'
 
@@ -78,9 +78,11 @@ async def image_hash(image_data: dict = Depends(validate_image)):
     return {'hash': hash_value}
 
 
-@router.get("/images/{image_id}")
-def read_image(image_id: int, db_session: Session = Depends(get_db)):
+@router.get("/{image_id}")
+def read_image(image_id: str = Path(..., title="Enter the ID of the cropped image", max_length=50, min_length=10), 
+               db_session: Session = Depends(get_db)):
     db_image = get_image(db_session, image_id)
     if db_image is None:
         raise HTTPException(status_code=404, detail="Image not found")
+    db_session.close()
     return db_image
